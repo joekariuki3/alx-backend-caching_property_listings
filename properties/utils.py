@@ -1,14 +1,21 @@
 from django.core.cache import cache
 from .models import Property
 from django_redis import get_redis_connection
+from logging import getLogger
 
 def get_all_properties():
     """
-    Fetches all properties, retrieving them from the cache if available, or from the
-    database if not cached, and stores the query result in cache for future calls.
+    Retrieve all Property objects from the database or cache.
+
+    This function checks if a cached queryset exists. If it does, the cached
+    queryset is returned. Otherwise, it queries the database to get all Property
+    objects, caches the result for a duration, and returns the queryset.
 
     Returns:
-        QuerySet: A queryset containing all Property objects.
+        QuerySet: The queryset of all Property objects.
+
+    Raises:
+        None
     """
     queryset = cache.get('all_properties')
     if queryset is None:
@@ -18,22 +25,19 @@ def get_all_properties():
 
 def get_redis_cache_metrics():
     """
-    Retrieve and calculate Redis cache metrics.
-
-    This function connects to a Redis database using a default connection, retrieves
-    cache information, calculates key performance metrics (keyspace hits, keyspace
-    misses, and hit ratio), and then returns these metrics as a dictionary.
+    Fetches and calculates Redis cache performance metrics, including hits, misses,
+    and hit ratio. This function retrieves data from a specified Redis connection
+    and organizes the metrics into a dictionary for performance analysis.
 
     Returns
     -------
     dict
-        A dictionary containing:
-            - hits: int
-                The number of successful key lookups in the Redis cache.
-            - misses: int
-                The number of unsuccessful key lookups in the Redis cache.
-            - hit_ratio: float
-                The ratio of cache hits to total cache lookups.
+        A dictionary containing Redis cache performance metrics. The keys include:
+        - hits: Number of successful cache hits.
+        - misses: Number of cache misses.
+        - hit_ratio: Ratio of hits to total cache accesses. (hits / (hits + misses)).
+        In case of an exception, the dictionary will contain an 'error' key
+        with the error message as its value.
     """
     try:
         redis_conn = get_redis_connection("default")
@@ -48,4 +52,6 @@ def get_redis_cache_metrics():
         }
         return metrics
     except Exception as e:
+        logger = getLogger(__name__)
+        logger.error(f"Error: {e}")
         return {'error': str(e)}
