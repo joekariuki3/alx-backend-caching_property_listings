@@ -40,6 +40,9 @@ def get_redis_cache_metrics():
         with the error message as its value.
     """
     try:
+        """
+        if total_requests > 0 else 0
+        """
         redis_conn = get_redis_connection("default")
         info = redis_conn.info()
         hits = info['keyspace_hits']
